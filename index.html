@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mood Meter · Me, My Mind & What Matters</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F4F6; --ink:#1C2430; --muted:#5B6675; --line:#D6DCE3; --card:#FFFFFF;
+  --red:#E8574A; --yellow:#F2B632; --blue:#4C7BD9; --green:#3FA97A;
+  --red-t:#FBE3E0; --yellow-t:#FDF0D2; --blue-t:#E2EAFA; --green-t:#DDF1E7;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#151A21; --ink:#EEF1F5; --muted:#9AA6B5; --line:#2C3541; --card:#1D242D;
+    --red-t:#3A2422; --yellow-t:#3A311B; --blue-t:#1F2A40; --green-t:#1B3329;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#151A21; --ink:#EEF1F5; --muted:#9AA6B5; --line:#2C3541; --card:#1D242D;
+  --red-t:#3A2422; --yellow-t:#3A311B; --blue-t:#1F2A40; --green-t:#1B3329;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:Figtree,system-ui,-apple-system,"Segoe UI",sans-serif;line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding:clamp(20px,4vw,48px) clamp(16px,3vw,32px)}
+header{max-width:62ch;margin-bottom:28px}
+.theme{color:var(--muted);font-weight:500;margin:0 0 6px}
+h1{font-family:"Bricolage Grotesque",Figtree,system-ui,sans-serif;font-weight:700;font-size:clamp(2.2rem,6vw,3.8rem);line-height:1.02;letter-spacing:-.02em;margin:0 0 14px}
+header p.lede{margin:0;color:var(--muted);font-size:1.05rem}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
+@media (max-width:860px){.layout{grid-template-columns:1fr}}
+.meter-scroll{overflow-x:auto;padding-bottom:6px}
+.meter{display:grid;grid-template-columns:28px 1fr;grid-template-rows:1fr 28px;min-width:540px}
+.axis-y{display:flex;align-items:center;justify-content:center}
+.axis-y span{writing-mode:vertical-rl;transform:rotate(180deg);font-size:.82rem;color:var(--muted);font-weight:600}
+.axis-x{grid-column:2;display:flex;align-items:center;justify-content:center;font-size:.82rem;color:var(--muted);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;aspect-ratio:1/1}
+.cell{position:relative;border:0;border-radius:10px;font:inherit;font-size:clamp(.66rem,1.15vw,.82rem);font-weight:500;color:var(--ink);cursor:pointer;padding:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1.15;transition:transform .12s ease}
+.cell:hover{transform:scale(1.05);z-index:2}
+.cell:focus-visible{outline:3px solid var(--ink);outline-offset:2px;z-index:3}
+.q-red{background:var(--red-t)} .q-yellow{background:var(--yellow-t)} .q-blue{background:var(--blue-t)} .q-green{background:var(--green-t)}
+.cell .heat{position:absolute;inset:0;border-radius:10px;pointer-events:none;opacity:0;transition:opacity .4s}
+.q-red .heat{background:var(--red)} .q-yellow .heat{background:var(--yellow)} .q-blue .heat{background:var(--blue)} .q-green .heat{background:var(--green)}
+.cell .w{position:relative}
+.cell .n{position:relative;font-size:.68rem;font-weight:600;margin-top:2px;opacity:.85}
+.cell.hot{color:#fff} .q-yellow.hot{color:#2a2000}
+.cell.mine{box-shadow:0 0 0 3px var(--ink)}
+.cell.mine::after{content:"you";position:absolute;top:-9px;right:-6px;background:var(--ink);color:var(--bg);font-size:.6rem;font-weight:600;padding:1px 6px;border-radius:999px}
+aside{display:flex;flex-direction:column;gap:18px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px}
+.panel h2{font-family:"Bricolage Grotesque",Figtree,sans-serif;font-size:1.2rem;margin:0 0 8px;font-weight:700}
+.panel p{margin:0 0 10px;color:var(--muted);font-size:.95rem}
+.my-word{font-family:"Bricolage Grotesque",Figtree,sans-serif;font-size:2rem;font-weight:700;margin:2px 0 6px;color:var(--ink)}
+button.ghost{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:7px 14px;font:inherit;font-size:.88rem;cursor:pointer}
+button.ghost:hover{border-color:var(--ink)}
+.bars{display:flex;flex-direction:column;gap:9px}
+.bar{display:grid;grid-template-columns:96px 1fr 28px;align-items:center;gap:10px;font-size:.88rem}
+.track{height:10px;border-radius:999px;background:var(--bg);overflow:hidden}
+.fill{height:100%;border-radius:999px;width:0;transition:width .5s ease}
+.total{font-size:.9rem;color:var(--muted);margin-top:10px}
+.nudge{display:none;border-left:4px solid var(--blue);padding:4px 0 4px 12px;margin-top:12px;font-size:.92rem;color:var(--ink)}
+.nudge.show{display:block}
+.status{font-size:.85rem;color:var(--muted);min-height:1.3em;margin-top:12px}
+footer{margin-top:32px;color:var(--muted);font-size:.85rem;max-width:70ch}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <p class="theme">Me, My Mind &amp; What Matters</p>
+    <h1>How are you, really?</h1>
+    <p class="lede">Tap the word closest to how you feel right now and stick it on today's board. It's anonymous: no names, just a colour among colleagues. Change it any time today.</p>
+  </header>
+
+  <div class="layout">
+    <div class="meter-scroll">
+      <div class="meter">
+        <div class="axis-y"><span>Energy: low to high</span></div>
+        <div class="grid" id="grid" role="grid" aria-label="Mood meter"></div>
+        <div class="axis-x">Pleasantness: low to high</div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="panel" id="mine">
+        <h2>Your mood today</h2>
+        <div id="mineBody"><p>Nothing stuck yet. Pick a word on the meter.</p></div>
+        <div class="nudge" id="nudge">Heavy days happen. Silver Oak EAP offers free, confidential support for you and your family, whenever you need it.</div>
+        <div class="status" id="status" aria-live="polite"></div>
+      </div>
+      <div class="panel">
+        <h2>Today at Table Space</h2>
+        <div class="bars" id="bars"></div>
+        <div class="total" id="total">No moods yet. Be the first.</div>
+      </div>
+    </aside>
+  </div>
+
+  <footer>The board resets each day. Only the mood word is stored; no one, including the organisers, can see who placed which sticker.</footer>
+</div>
+
+<script>
+const WORDS = [
+ ["Enraged","Panicked","Stressed","Shocked","Surprised","Thrilled","Ecstatic","Elated"],
+ ["Furious","Frightened","Anxious","Restless","Energised","Excited","Inspired","Joyful"],
+ ["Frustrated","Nervous","Worried","Irritated","Motivated","Cheerful","Optimistic","Proud"],
+ ["Annoyed","Troubled","Uneasy","Tense","Pleasant","Hopeful","Focused","Happy"],
+ ["Disappointed","Sad","Down","Bored","At ease","Easygoing","Content","Grateful"],
+ ["Lonely","Discouraged","Tired","Low","Calm","Secure","Satisfied","Thoughtful"],
+ ["Isolated","Drained","Exhausted","Weary","Relaxed","Balanced","Peaceful","Cosy"],
+ ["Burnt out","Depleted","Numb","Sleepy","Restful","Mellow","Serene","Tranquil"]
+];
+const QUADS = {red:"Fired up, uneasy",yellow:"Bright, buzzing",blue:"Low, heavy",green:"Calm, steady"};
+const quadOf = i => { const r=Math.floor(i/8), c=i%8; return r<4 ? (c<4?"red":"yellow") : (c<4?"blue":"green"); };
+const today = () => { const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); };
+
+const state = { counts:new Array(64).fill(0), mine:null, db:null, uid:null, canWrite:true, busy:false };
+const grid = document.getElementById("grid");
+const cells = [];
+WORDS.flat().forEach((w,i)=>{
+  const b=document.createElement("button");
+  b.className="cell q-"+quadOf(i);
+  b.setAttribute("aria-label",w);
+  b.innerHTML='<span class="heat"></span><span class="w"></span><span class="n"></span>';
+  b.querySelector(".w").textContent=w;
+  b.addEventListener("click",()=>stick(i));
+  grid.appendChild(b); cells.push(b);
+});
+const bars=document.getElementById("bars");
+Object.entries(QUADS).forEach(([k,label])=>{
+  const row=document.createElement("div"); row.className="bar";
+  row.innerHTML='<span></span><div class="track"><div class="fill" style="background:var(--'+k+')"></div></div><span class="c">0</span>';
+  row.firstChild.textContent=label; row.dataset.q=k; bars.appendChild(row);
+});
+
+function render(){
+  const max=Math.max(1,...state.counts), total=state.counts.reduce((a,b)=>a+b,0);
+  cells.forEach((c,i)=>{
+    const n=state.counts[i];
+    c.querySelector(".heat").style.opacity = n ? (0.35+0.65*n/max) : 0;
+    c.classList.toggle("hot", n>0 && n/max>0.45);
+    c.querySelector(".n").textContent = n ? "●".repeat(Math.min(n,5)) + (n>5?" "+n:"") : "";
+    c.classList.toggle("mine", state.mine===i);
+    c.setAttribute("aria-label", WORDS.flat()[i] + (n? ", "+n+" today":"") + (state.mine===i?", your mood":""));
+  });
+  const q={red:0,yellow:0,blue:0,green:0}; state.counts.forEach((n,i)=>q[quadOf(i)]+=n);
+  bars.querySelectorAll(".bar").forEach(r=>{
+    const v=q[r.dataset.q]; r.querySelector(".c").textContent=v;
+    r.querySelector(".fill").style.width = total? (v/total*100)+"%" : "0";
+  });
+  document.getElementById("total").textContent = total ? total+(total===1?" person has":" people have")+" checked in today." : "No moods yet. Be the first.";
+  const body=document.getElementById("mineBody");
+  if(state.mine===null){ body.innerHTML="<p>Nothing stuck yet. Pick a word on the meter.</p>"; }
+  else{
+    body.innerHTML='<div class="my-word"></div><p class="same"></p><button class="ghost" id="unstick">Remove my sticker</button>';
+    body.querySelector(".my-word").textContent=WORDS.flat()[state.mine];
+    const others=state.counts[state.mine]-1;
+    body.querySelector(".same").textContent = others>0 ? others+" other"+(others>1?"s":"")+" feel the same today. You're not alone." : "Thanks for checking in with yourself.";
+    document.getElementById("unstick").onclick=unstick;
+  }
+  document.getElementById("nudge").classList.toggle("show", state.mine!==null && quadOf(state.mine)==="blue" || state.mine!==null && quadOf(state.mine)==="red");
+  if(!state.canWrite) cells.forEach(c=>c.disabled=true);
+}
+const say = t => document.getElementById("status").textContent=t;
+
+function getUid(){
+  let id=null;
+  try{ id=localStorage.getItem("tsMoodId"); }catch(e){}
+  if(!id){
+    id=(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2)+Math.random().toString(36).slice(2));
+    try{ localStorage.setItem("tsMoodId",id); }catch(e){}
+  }
+  return id;
+}
+state.uid=getUid();
+function apply(d){ if(d&&Array.isArray(d.counts)){ state.counts=d.counts; state.mine=(typeof d.mine==="number")?d.mine:null; render(); } }
+async function load(){
+  try{ const r=await fetch("/api/moods?id="+encodeURIComponent(state.uid),{cache:"no-store"}); if(r.ok) apply(await r.json()); }
+  catch(e){ say("Can't reach the board. Check your connection."); }
+}
+async function send(method,body){
+  const r=await fetch("/api/moods",{method,headers:{"content-type":"application/json"},body:JSON.stringify(body)});
+  if(!r.ok) throw new Error("save failed");
+  apply(await r.json());
+}
+async function stick(i){
+  if(state.busy) return; state.busy=true;
+  const prev=state.mine; state.mine=i; render();
+  try{ await send("POST",{id:state.uid,cell:i}); say("Stuck. You can change it any time today."); }
+  catch(e){ state.mine=prev; render(); say("Couldn't save your sticker. Check your connection and tap again."); }
+  state.busy=false;
+}
+async function unstick(){
+  if(state.busy) return; state.busy=true;
+  try{ await send("DELETE",{id:state.uid}); say("Sticker removed."); }
+  catch(e){ say("Couldn't remove your sticker. Try again."); }
+  state.busy=false;
+}
+render();
+load();
+setInterval(()=>{ if(!document.hidden) load(); },20000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
+</script>
+</body>
+</html>
